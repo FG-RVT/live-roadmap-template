@@ -1,0 +1,97 @@
+{
+  "$schema": "../install/tools/roadmap/roadmap-live.schema.json",
+  "$comment": "Live roadmap plan. Read by tools/roadmap/build.mjs, which adds the git history and writes roadmap-data.js next to the roadmap page. Format: tools/roadmap/roadmap-live.schema.json. Curating rules: the project's agent instructions (Live roadmap section).",
+  "project": {
+    "name": "Example App",
+    "homeUrl": "../index.html"
+  },
+  "languages": ["en"],
+  "mainBranch": "main",
+  "output": "docs/roadmap",
+  "watch": ["docs/ROADMAP.md"],
+  "trunk": "core",
+  "notOnRoadmap": ["chore/ci-cache", "#7", "dependabot/*"],
+  "tracks": [
+    { "id": "accounts", "title": "Accounts" },
+    { "id": "core", "title": "Core" },
+    { "id": "editor", "title": "Editor" },
+    { "id": "release", "title": "Release" }
+  ],
+  "milestones": [
+    {
+      "id": "start", "track": "core", "status": "done", "commit": "a1b2c3d",
+      "title": "Project start",
+      "summary": "Scope and architecture written down."
+    },
+    {
+      "id": "data-model", "track": "core", "status": "done", "merge": ["#3", "#5"], "ref": "M1",
+      "title": "Data model",
+      "summary": "Documents are stored, versioned and can be restored."
+    },
+    {
+      "id": "sync", "track": "core", "status": "later", "after": ["editor-basic"], "ref": "M3",
+      "title": "Sync between devices",
+      "summary": "Changes made on one device show up on the others."
+    },
+    {
+      "id": "release-1-0", "track": "core", "status": "later", "final": true,
+      "title": "1.0 release",
+      "summary": "Everything on the roadmap is built, tested and published."
+    },
+
+    {
+      "id": "login", "track": "accounts", "status": "done", "after": ["data-model"], "merge": ["feature/login"],
+      "title": "Sign-in",
+      "summary": "People sign in with an email link."
+    },
+    {
+      "id": "teams", "track": "accounts", "status": "next", "ref": "#21",
+      "title": "Teams",
+      "summary": "Several people share one workspace."
+    },
+    {
+      "id": "roles", "track": "accounts", "status": "later",
+      "title": "Roles and rights",
+      "summary": "Owners decide who may edit and who may only read."
+    },
+
+    {
+      "id": "editor-basic", "track": "editor", "status": "active", "after": ["data-model"], "merge": ["feature/editor"], "ref": "M2",
+      "title": "Basic editor",
+      "summary": "Write and format text, with undo.",
+      "tasks": [
+        { "done": true, "text": "Text input and formatting" },
+        { "done": true, "text": "Undo and redo" },
+        { "done": false, "text": "Keyboard shortcuts" },
+        { "done": false, "text": "Your decision on the toolbar layout" }
+      ]
+    },
+    {
+      "id": "editor-images", "track": "editor", "status": "next",
+      "title": "Images",
+      "summary": "Paste and drag images into a document."
+    },
+    {
+      "id": "editor-comments", "track": "editor", "status": "later",
+      "title": "Comments",
+      "summary": "Leave comments on any part of a document."
+    },
+
+    {
+      "id": "licence", "track": "release", "status": "later", "after": ["editor-basic"],
+      "title": "Licence chosen",
+      "summary": "The licence and its terms are decided."
+    },
+    {
+      "id": "installer", "track": "release", "status": "later",
+      "title": "Installer",
+      "summary": "One installer for Windows, macOS and Linux."
+    }
+  ],
+  "waiting": [
+    {
+      "ref": "ROADMAP.md open question 2", "milestone": "editor-basic",
+      "text": "Which toolbar layout to build: a fixed bar or a floating one."
+    }
+  ]
+}

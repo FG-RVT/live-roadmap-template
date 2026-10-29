@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Live roadmap plan",
+  "description": "The hand-kept plan read by tools/roadmap/build.mjs. The builder also checks what this schema cannot: ids that refer to each other, a text for every language, loops in \"after\", and the curating rules.",
+  "type": "object",
+  "required": ["project", "trunk", "tracks", "milestones"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "$comment": { "type": "string" },
+    "project": {
+      "description": "Shown in the page header.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "homeUrl": { "description": "Link from the page's logo.", "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "languages": {
+      "description": "Languages of every text, the first is the default. With one language texts are plain strings; with several, each text is an object keyed by language.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 2 },
+      "minItems": 1,
+      "uniqueItems": true,
+      "default": ["en"]
+    },
+    "mainBranch": { "description": "Branch whose history counts.", "type": "string", "default": "main" },
+    "output": { "description": "Page folder, relative to the repository root (may lie outside it).", "type": "string" },
+    "watch": {
+      "description": "The project's own plan or status documents. When one changes after this plan, the check warns.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "trunk": { "description": "Id of the track every other track branches off and rejoins. It holds the final milestone.", "type": "string" },
+    "notOnRoadmap": {
+      "description": "History keys deliberately on no milestone (tooling, docs, chores): a branch name, \"#42\", or a pattern with * that matches a key or the commit subject (\"dependabot/*\", \"chore*\").",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "tracks": {
+      "description": "4-10 topics a non-technical reader recognises, listed top to bottom as drawn, the trunk near the middle.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "$ref": "#/$defs/text" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "milestones": {
+      "description": "Outcomes, not tasks: 3-8 per track, in the order they happen.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/milestone" }
+    },
+    "waiting": {
+      "description": "Decisions only a human can make that block work.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["text"],
+        "properties": {
+          "text": { "$ref": "#/$defs/text", "description": "One sentence: what must be decided." },
+          "ref": { "description": "Where it is discussed.", "type": "string" },
+          "milestone": { "description": "Id of the milestone it blocks.", "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "patternProperties": { "^\\$": {} },
+  "additionalProperties": false,
+  "$defs": {
+    "text": {
+      "description": "A plain string with one language; an object keyed by language with several.",
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "object", "additionalProperties": { "type": "string", "minLength": 1 }, "minProperties": 1 }
+      ]
+    },
+    "historyKey": {
+      "description": "A branch name (\"feature/login\") or a pull request (\"#42\").",
+      "type": "string",
+      "minLength": 1
+    },
+    "milestone": {
+      "type": "object",
+      "required": ["id", "track", "status", "title"],
+      "properties": {
+        "id": { "description": "Unique, kebab-case.", "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "track": { "description": "A track id. A track's milestones are in listed order.", "type": "string" },
+        "status": {
+          "description": "done: finished, with evidence. active: being worked on now (at most 3). next: directly queued after the active work. later: everything else up to the release.",
+          "enum": ["done", "active", "next", "later"]
+        },
+        "title": { "$ref": "#/$defs/text", "description": "A short outcome, 2-5 words, at most 30 characters." },
+        "summary": { "$ref": "#/$defs/text", "description": "One plain sentence on what a user gets." },
+        "after": {
+          "description": "Ids of milestones in other tracks this one waits for (a track's own order is implicit). The first is where a track branches off.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "merge": {
+          "description": "History keys that finish it. Required evidence for done; on a milestone not done yet, the keys it expects (it shows as done once all of them are merged).",
+          "type": "array",
+          "items": { "$ref": "#/$defs/historyKey" },
+          "minItems": 1
+        },
+        "commit": { "description": "Done only: a commit hash, for work that never went through a merge.", "type": "string", "pattern": "^[0-9a-f]{4,40}$" },
+        "ref": { "description": "Short internal reference shown small (ticket, work package, phase).", "type": "string" },
+        "tasks": {
+          "description": "The checklist on its card; an active milestone has 3-7.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["done", "text"],
+            "properties": {
+              "done": { "type": "boolean" },
+              "text": { "$ref": "#/$defs/text" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "final": { "description": "Exactly one milestone: the release every track ends in.", "const": true }
+      },
+      "patternProperties": { "^\\$": {} },
+      "additionalProperties": false
+    }
+  }
+}

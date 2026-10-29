@@ -1,0 +1,2 @@
+# Hook scripts run under sh, which needs LF line endings in every checkout.
+* text eol=lf
