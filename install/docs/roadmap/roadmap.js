@@ -19,7 +19,7 @@
   var REFRESH_MS = 60000;
   var LANG_KEY = "live-roadmap-lang";
   var THEME_KEY = "live-roadmap-theme";
-  var THEME_COLORS = { light: "#f5f4ef", dark: "#121513" };
+  var THEME_COLORS = { light: "#fafafa", dark: "#121513" };
 
   // --- Interface texts (add a language by adding a block; missing texts fall
   // back to English) ---------------------------------------------------------------

@@ -1,12 +1,12 @@
 /* Live roadmap page. Rebrand by changing the variables: light in :root, dark under [data-theme="dark"]. */
 :root{
   color-scheme:light;
-  --bg:#f5f4ef;
-  --stage:#ecebe5;
+  --bg:#fafafa;
+  --stage:#f2f2f2;
   --panel:#fff;
-  --header:rgba(245,244,239,.92);
+  --header:rgba(250,250,250,.92);
   --line:rgba(20,24,21,.13);
-  --line-soft:#e0dfd8;
+  --line-soft:#e6e6e6;
   --band-h:rgba(20,24,21,.045);
   --band-v:rgba(20,24,21,.03);
   --text:#161a17;
