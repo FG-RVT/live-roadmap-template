@@ -14,6 +14,14 @@
 
 You need **git**, **Node.js 18+** and an AI coding agent (Claude Code, Cursor, Copilot, …).
 
+**The lazy way:** paste this into your agent's chat, in your project:
+
+```text
+Download https://github.com/FG-RVT/live-roadmap-template/archive/refs/tags/v0.1.0.zip, unzip it into this project's root and follow live-roadmap-template-0.1.0/AI_SETUP.md. Afterwards, delete the ZIP and that folder.
+```
+
+**Or by hand:**
+
 1. **Download** the ZIP above and unzip it into the root folder of your project. The folder ignores itself, so it never ends up in your commits.
 2. **Ask your AI agent:**
    > Read `live-roadmap-template-main/AI_SETUP.md` and set up the live roadmap for this project.
