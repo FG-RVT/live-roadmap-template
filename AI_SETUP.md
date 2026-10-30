@@ -18,15 +18,15 @@ The page is plain HTML/CSS/JS with no dependencies, light by default with a dark
 
 The roadmap is installed in one of two ways. The human chooses in step 1.
 
+**Local works exactly like shared** — the same hooks rebuild the page after every commit, merge, rebase and branch switch, an open page refreshes itself, and every later AI session keeps the plan true — **except that nothing reaches the repository.** It is the developer's own overview, not part of the project: `git status` must look the same after a local setup as before it. If you cannot make something automatic in local mode, tell the human what and why; never fall back to changing a tracked file.
+
 | | **Shared** — for the team | **Local** — just for this developer |
 | --- | --- | --- |
 | Files | `tools/roadmap/`, `docs/roadmap/`, `docs/roadmap-live.json`, committed | everything in `.roadmap/`, kept out of git through `.git/info/exclude` |
-| Git hooks | committed (`.githooks/` or the project's hook manager) | in git's own, uncommitted hooks folder |
-| Check | in the project's checks / CI | none; `--check` by hand |
+| Git hooks | committed (`.githooks/` or the project's hook manager) | a private hooks folder, `.roadmap/hooks/`, switched on in this clone's own git settings; the project's own hooks still run first |
+| Agent rule | the project's shared agent instructions | its own rule file that the agent loads automatically, kept out of git |
+| Check | in the project's checks / CI | run by the agent before it finishes a task |
 | Publishing | built wherever the page is published | none; the page is opened from disk |
-| Agent rule | the project's shared agent instructions | a personal, uncommitted instruction file |
-
-**Local changes nothing git tracks.** `git status` must look the same after a local setup as before it.
 
 ## What you deliver
 
@@ -40,7 +40,8 @@ The roadmap is installed in one of two ways. The human chooses in step 1.
 
 ```
 install/                     everything that goes into the project
-  tools/roadmap/             build.mjs, roadmap-live.schema.json (the plan format), rebuild.sh (called by the hooks)
+  tools/roadmap/             build.mjs, roadmap-live.schema.json (the plan format), rebuild.sh (called by the hooks),
+                             hooks.mjs and hook.sh (the private hooks of a local install)
   docs/roadmap/              the page: roadmap.html, roadmap.css, roadmap.js, .gitignore
   .githooks/                 post-commit, post-merge, post-checkout, post-rewrite (shared installs only)
 example/roadmap-live.json    an example plan; you write docs/roadmap-live.json
@@ -134,16 +135,19 @@ The hooks rebuild the page data after commits, merges, rebases and branch switch
 
 If the page folder lies outside the repository, the hooks still write there; the human only needs the folder to exist.
 
-**Local** — nothing tracked may change:
+**Local** — one command, whatever the project uses for hooks:
 
-- Find the folder git runs hooks from: `git rev-parse --git-path hooks` (usually `.git/hooks`). For each of `post-commit`, `post-merge`, `post-checkout` and `post-rewrite`: create the hook there with
-  ```sh
-  #!/bin/sh
-  sh .roadmap/tools/roadmap/rebuild.sh <hook> "$@"
-  ```
-  (its own name for `<hook>`), and make it executable (`chmod +x`). If the hook already exists, append the second line to it instead.
-- If that folder is part of the repository (`core.hooksPath` pointing at a committed folder, or Husky — whose hooks live in `.husky/`): add only hooks that do not exist yet, and list each new file in the exclude file. A hook of that name that is already committed must not be edited — leave it out and tell the human the page then skips that event.
-- Lefthook or the pre-commit framework overwrite git's hooks folder when they reinstall; tell the human, and that re-running this step restores them.
+```bash
+node .roadmap/tools/roadmap/hooks.mjs install
+```
+
+It creates `.roadmap/hooks/` and points git at it through `core.hooksPath` in this clone's own settings (`.git/config`, never pushed). Every hook there runs the project's own hook of that name first, from the folder git used before (`.git/hooks`, `.husky/_`, a committed hooks folder, …), so the project's hooks keep working and keep deciding — a failing pre-commit still stops the commit. After commits, merges, rebases and branch switches it then rebuilds the roadmap. `hooks.mjs status` says whether it is active; `hooks.mjs uninstall` gives git its previous hooks folder back.
+
+Hook managers can take the hooks folder back when they reinstall (Husky on every `npm install`). The build and the check then warn, and `hooks.mjs install` repairs it — the agent rule tells later sessions to do so. Tell the human about the one that applies:
+
+- **Husky:** nothing to do now; repaired whenever the check warns.
+- **Lefthook:** run `lefthook install` before `hooks.mjs install`, never after.
+- **pre-commit framework:** `pre-commit install` refuses to run while `core.hooksPath` is set: `hooks.mjs uninstall`, then `pre-commit install`, then `hooks.mjs install`.
 
 ## Step 6 — The check (shared only)
 
@@ -153,7 +157,7 @@ Add `node tools/roadmap/build.mjs --check` to the project's existing check scrip
 - In CI, a shallow clone (the usual default) has no history: the check validates the plan and skips freshness. For freshness in CI, fetch full history (GitHub Actions: `fetch-depth: 0`).
 - If the project's checks treat any output as failure, make sure the warnings do not fail the run.
 
-Local: skip this step; the hooks already print the warnings after each commit.
+Local: skip this step; the hooks print the warnings after each commit, and the agent rule has the agent run the check before it finishes a task.
 
 ## Step 7 — Build the data where the page is published (shared only)
 
@@ -177,10 +181,14 @@ Local: skip this step.
 
 ## Step 8 — The agent rule
 
-Fill in `snippets/agent-rule.md`: replace `<PAGE_FOLDER>`, `<PLAN_FILE>`, `<SCHEMA_FILE>`, `<BUILD_SCRIPT>`, `<MAIN_BRANCH>`, `<WATCHED_FILES>`, `<CHECK_COMMAND>`, and `<OPTIONAL_LANGUAGE_NOTE>` (e.g. ", in German and English", or delete it).
+Fill in `snippets/agent-rule.md`: replace `<PAGE_FOLDER>`, `<PLAN_FILE>`, `<SCHEMA_FILE>`, `<BUILD_SCRIPT>`, `<MAIN_BRANCH>`, `<WATCHED_FILES>`, `<CHECK_COMMAND>`, `<OPTIONAL_LANGUAGE_NOTE>` (e.g. ", in German and English", or delete it) and `<LOCAL_HOOKS_NOTE>` (local: " If it says the roadmap's hooks are not active, run `node .roadmap/tools/roadmap/hooks.mjs install`."; shared: delete it).
 
 - **Shared:** paste it into the project's agent instructions (the file other AI tools read — `AGENTS.md`, `CLAUDE.md`, etc.; if there is none, ask the human which to create). Match the file's existing heading levels and tone.
-- **Local:** paste it into a personal instruction file that is not committed — for Claude Code `CLAUDE.local.md` in the repository root; for other tools, their user-level instructions. Add a new file to the exclude file. Drop "(in the same branch / pull request as the change that causes it)": the plan is not in git. If the human's tool has no such file, save the rule as `.roadmap/AGENT_RULE.md` and tell them to point their agent at it.
+- **Local:** the rule goes into a **new file of its own** that the human's agent loads automatically in every session — never into an existing instruction file, which may be tracked. Agents read these files from disk whether git tracks them or not, so list each new file in the exclude file. Drop "(in the same branch / pull request as the change that causes it)": the plan is not in git.
+  - **Claude Code:** `.claude/rules/live-roadmap.md`, with no frontmatter (a rule without `paths` loads in every session). Not `CLAUDE.local.md`: while one exists, Claude Code stops reading the project's `AGENTS.md`.
+  - **Other agents:** the file type your tool loads from a project folder on its own, as a separate file — for example a Cursor project rule (`.cursor/rules/live-roadmap.mdc` with `alwaysApply: true`) or a GitHub Copilot instructions file (`.github/instructions/live-roadmap.instructions.md` with `applyTo: "**"`). Check the format against your tool's current documentation.
+  - Ask which agents the human uses, and add one file per agent.
+  - Only if an agent has no such file: save the rule as `.roadmap/AGENT_RULE.md` and tell the human that this agent will not keep the plan up to date unless they point it at that file.
 
 ## Step 9 — Report and clean up
 
@@ -192,7 +200,7 @@ Tell the human, in plain words:
 - every assumption (a merge you grouped, a status you inferred, an outcome you named) — these are what they should correct;
 - any warning still printed, and why;
 - shared: what every other clone needs — Node.js 18+, and the one-time command (`git config core.hooksPath ...`), if any — and what you changed for publishing;
-- local: that `git status` is unchanged, and any hook you had to leave out.
+- local: that `git status` is unchanged, what `hooks.mjs status` says, the note for their hook manager (step 5), and which agent rule files you created.
 
 Then ask whether to remove this template folder (everything it holds has been copied to its place; it is ignored by git either way). Shared: commit only if the human asks you to, following the project's commit conventions. Local: there is nothing to commit.
 

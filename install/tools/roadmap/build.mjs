@@ -42,6 +42,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { localHooksProblem } from './hooks.mjs';
 
 if (Number(process.versions.node.split('.')[0]) < 18) {
   console.error(`roadmap: ERROR Node.js 18 or newer is needed (this is ${process.version})`);
@@ -83,7 +84,8 @@ function tryGit(gitArgs, cwd = ROOT) {
 }
 
 const ROOT = tryGit(['rev-parse', '--show-toplevel'], process.cwd()) || process.cwd();
-const DEFAULT_PLAN = resolve(dirname(fileURLToPath(import.meta.url)), '../../docs/roadmap-live.json');
+const TOOLS = dirname(fileURLToPath(import.meta.url));
+const DEFAULT_PLAN = resolve(TOOLS, '../../docs/roadmap-live.json');
 const PLAN = option('--plan')
   ? resolve(option('--plan'))
   : process.env.ROADMAP_PLAN ? resolve(ROOT, process.env.ROADMAP_PLAN) : DEFAULT_PLAN;
@@ -323,6 +325,8 @@ if (plan && !errors.length) {
   const history = noGit ? null : readHistory(plan);
   if (noGit) say('roadmap: --no-git: past dates and freshness left out');
   else if (!history) warnings.push('no git history (not a repository, or a shallow clone); past dates and freshness skipped');
+  const hooksProblem = noGit ? null : localHooksProblem(ROOT);
+  if (hooksProblem) warnings.push(`${hooksProblem} -- run node ${relative(ROOT, join(TOOLS, 'hooks.mjs')).replace(/\\/g, '/')} install`);
 
   const noEvidence = [];
   const milestones = plan.milestones.map((m) => {

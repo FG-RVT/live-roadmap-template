@@ -29,7 +29,7 @@ Download https://github.com/FG-RVT/live-roadmap-template/releases/latest/downloa
 
 That's it. The agent reads your documents and merge history, writes the plan, and installs the page and the git hooks. From then on the page updates itself after every commit, and later AI sessions keep the plan true.
 
-**Just for you, or for the team?** The agent asks. **Local** keeps everything in a `.roadmap/` folder that git ignores, so your repository stays untouched. **Shared** commits the roadmap so teammates, CI and a published page get it too.
+**Just for you, or for the team?** The agent asks. **Local** works exactly the same — it updates on every commit and your agent keeps the plan true — but everything stays in a `.roadmap/` folder that git ignores, so your repository stays untouched and your own git hooks keep working. **Shared** commits the roadmap so teammates, CI and a published page get it too.
 
 ## What you get
 
