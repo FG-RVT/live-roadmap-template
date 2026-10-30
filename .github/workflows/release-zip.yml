@@ -1,0 +1,31 @@
+name: Release ZIP
+
+# Attaches live-roadmap-template.zip (one folder, live-roadmap-template/) to every
+# release, so .../releases/latest/download/live-roadmap-template.zip always
+# serves the newest one. Run it by hand to add the ZIP to an older release.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to attach the ZIP to
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build the ZIP and attach it to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          git archive --worktree-attributes --format=zip --prefix=live-roadmap-template/ -o live-roadmap-template.zip "$TAG"
+          gh release upload "$TAG" live-roadmap-template.zip --clobber

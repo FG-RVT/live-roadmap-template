@@ -1,3 +1,7 @@
 # LF everywhere, so the shell scripts and hooks run on every platform.
 * text=auto eol=lf
 *.png binary
+
+# Left out of release ZIPs: users only need what an install uses.
+.github export-ignore
+images export-ignore
