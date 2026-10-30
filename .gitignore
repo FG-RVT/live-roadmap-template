@@ -1,2 +1,3 @@
-.DS_Store
-Thumbs.db
+# This folder ignores itself, so it never ends up in the project it is dropped
+# into. Maintainers of the template: add new files with `git add -f`.
+*

@@ -2,6 +2,8 @@
 
 You have been asked to install the **live roadmap** in this project. Read this whole file before you change anything. The human who dropped this folder in wants the result described under "What you deliver"; everything else here is how to get there.
 
+This template folder ignores itself (its `.gitignore` holds `*`), so it never ends up in the project's git history. Leave that file alone.
+
 ## What the live roadmap is
 
 A single web page that shows where the project stands:
@@ -12,38 +14,55 @@ A single web page that shows where the project stands:
 
 The page is plain HTML/CSS/JS with no dependencies, light by default with a dark mode. A small Node script (`build.mjs`, Node 18+, no packages) merges the hand-kept **plan file** with the git history and writes `roadmap-data.js` next to the page.
 
+## Shared or local
+
+The roadmap is installed in one of two ways. The human chooses in step 1.
+
+| | **Shared** — for the team | **Local** — just for this developer |
+| --- | --- | --- |
+| Files | `tools/roadmap/`, `docs/roadmap/`, `docs/roadmap-live.json`, committed | everything in `.roadmap/`, kept out of git through `.git/info/exclude` |
+| Git hooks | committed (`.githooks/` or the project's hook manager) | in git's own, uncommitted hooks folder |
+| Check | in the project's checks / CI | none; `--check` by hand |
+| Publishing | built wherever the page is published | none; the page is opened from disk |
+| Agent rule | the project's shared agent instructions | a personal, uncommitted instruction file |
+
+**Local changes nothing git tracks.** `git status` must look the same after a local setup as before it.
+
 ## What you deliver
 
 1. The page, the build script and a **plan file curated from this project's real documents and history**.
 2. Git hooks that rebuild the page data after every commit, merge, rebase and branch switch.
-3. A check in the project's existing checks / CI that fails on a broken plan and warns when it falls behind.
-4. The page data built wherever the page is published.
-5. A "Live Roadmap" section in the project's agent instructions, so every later AI session keeps the plan true.
-6. A short report to the human: what you chose, what you assumed, what they should correct.
+3. Shared only: a check in the project's existing checks / CI that fails on a broken plan and warns when it falls behind, and the page data built wherever the page is published.
+4. A "Live Roadmap" section in agent instructions, so every later AI session keeps the plan true.
+5. A short report to the human: what you chose, what you assumed, what they should correct.
 
 ## Template contents
 
 ```
-install/                     copy its contents into the repository root
+install/                     everything that goes into the project
   tools/roadmap/             build.mjs, roadmap-live.schema.json (the plan format), rebuild.sh (called by the hooks)
   docs/roadmap/              the page: roadmap.html, roadmap.css, roadmap.js, .gitignore
-  .githooks/                 post-commit, post-merge, post-checkout, post-rewrite
+  .githooks/                 post-commit, post-merge, post-checkout, post-rewrite (shared installs only)
 example/roadmap-live.json    an example plan; you write docs/roadmap-live.json
-snippets/agent-rule.md       the rules for the project's agent instructions (step 8)
+snippets/agent-rule.md       the rules for the agent instructions (step 8)
 ```
 
-The defaults are `tools/roadmap/`, `docs/roadmap/` (the page folder) and `docs/roadmap-live.json` (the plan). If the project needs other places, these name the builder's path and must follow: `tools/roadmap/rebuild.sh`, the `.githooks/` scripts, the "no data" message in `roadmap.html`, the plan's `$schema`, and the agent rule. A plan elsewhere than `docs/roadmap-live.json` needs `ROADMAP_PLAN` set for the hooks and the check (or `--plan`).
+- **Shared:** copy the contents of `install/` into the repository root. The plan is `docs/roadmap-live.json`, the page folder `docs/roadmap/`.
+- **Local:** copy `install/tools/` and `install/docs/` into `.roadmap/` (no `.githooks/`). The plan is `.roadmap/docs/roadmap-live.json`, the page folder `.roadmap/docs/roadmap/`, and every command below starts with `.roadmap/` (`node .roadmap/tools/roadmap/build.mjs`).
+
+The builder finds its plan by itself: `docs/roadmap-live.json` beside the `tools/` folder it sits in. If a shared install needs other places, these name the builder's path and must follow: the `.githooks/` scripts, the "no data" message in `roadmap.html`, the plan's `$schema`, and the agent rule; a plan elsewhere needs `ROADMAP_PLAN` set for the hooks and the check (or `--plan`).
 
 Read `tools/roadmap/roadmap-live.schema.json` — every field, with its rules — and the header of `build.mjs`.
 
 ## Step 0 — Check the requirements
 
-Run `git --version` and `node --version`. **Node.js 18 or newer is required** — without it the page data is never built, and the hooks can only print a reminder. If Node is missing or older, stop here: tell the human, and continue only once it is installed (or they tell you to set up anyway, knowing the page stays empty until it is). Every machine that commits to the project needs Node 18+ too; say so in your report.
+Run `git --version` and `node --version`. **Node.js 18 or newer is required** — without it the page data is never built, and the hooks can only print a reminder. If Node is missing or older, stop here: tell the human, and continue only once it is installed (or they tell you to set up anyway, knowing the page stays empty until it is). In a shared setup every machine that commits needs Node 18+ too; say so in your report.
 
 ## Step 1 — Ask the human first (one message, all questions together, with your recommendation for each)
 
-- **Where should the page live?** A folder inside the repo (recommended: `docs/roadmap/`), or an existing website / docs folder — possibly outside the repo (then `output` is a relative path like `../Website`).
-- **How is the page published?** Not at all (opened locally), a static host such as GitHub Pages, or the project's own site build. This decides step 7.
+- **Shared with the team, or just for you?** (see "Shared or local"). Recommend local unless they want teammates, CI or a published page to have it.
+- **Shared only — where should the page live?** A folder inside the repo (recommended: `docs/roadmap/`), or an existing website / docs folder — possibly outside the repo (then `output` is a relative path like `../Website`).
+- **Shared only — how is the page published?** Not at all (opened locally), a static host such as GitHub Pages, or the project's own site build. This decides step 7.
 - **Languages.** Default English only. For several, list them; the first is the default. The page ships interface texts for `en` and `de`; for others add a block to `UI` in `roadmap.js` (missing texts fall back to English).
 - **What is the release goal** at the right end of the timeline (e.g. "1.0 public release")? If the project's documents name it, propose that.
 - **Anything they want on or off the roadmap** (e.g. "leave the marketing site out").
@@ -68,9 +87,9 @@ Read, in this order, and take notes:
 4. The project's agent instruction files (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, …), how its checks run (`package.json` scripts, `Makefile`, `checks.*`, CI workflows) and how it is deployed.
 5. How git hooks are managed: `.husky/`, `lefthook.yml`, `.pre-commit-config.yaml`, `git config core.hooksPath`, or nothing.
 
-## Step 3 — Curate the plan (`docs/roadmap-live.json`)
+## Step 3 — Curate the plan
 
-This is the part that needs judgement. Start the file with `"$schema": "../tools/roadmap/roadmap-live.schema.json"` (relative to the plan) so editors check it. Follow the writing rules in `snippets/agent-rule.md` ("How to write it"); the setup adds these:
+This is the part that needs judgement. Start the file with `"$schema": "../tools/roadmap/roadmap-live.schema.json"` (relative to the plan, the same in both modes) so editors check it. Set `output` to the page folder (`docs/roadmap` or `.roadmap/docs/roadmap`). Follow the writing rules in `snippets/agent-rule.md` ("How to write it"); the setup adds these:
 
 **Tracks**
 - 4–10 tracks. Each is a **topic a non-technical reader recognises** (a feature area, a product part, "Release"), not a team or a technical layer.
@@ -91,18 +110,21 @@ This is the part that needs judgement. Start the file with `"$schema": "../tools
 
 ## Step 4 — Install and build
 
-1. Copy the contents of `install/` into the repository root (adapting paths as above) and write the plan.
-2. Run from the repository root:
+1. Copy the files as described under "Template contents" and write the plan.
+   - **Local:** first add a line `.roadmap/` to the project's exclude file (its path: `git rev-parse --git-path info/exclude`), then check that `git status` does not list `.roadmap/`.
+2. Run from the repository root (local: with the `.roadmap/` prefix):
    ```bash
    node tools/roadmap/build.mjs
    node tools/roadmap/build.mjs --check
    ```
    Fix every ERROR. Every WARNING must be either fixed or understood (and reported).
-3. Open `roadmap.html` in a browser — straight from disk should work, since the data is a plain script and nothing is fetched; otherwise use a local web server (e.g. `python -m http.server` in the page folder) — and look at it in light and dark mode: every track, the focused milestone card, the sections below. If labels collide or a track is overloaded, re-curate (split a track, merge milestones). Check a phone-width window too.
+3. Open `roadmap.html` from the page folder in a browser — straight from disk works, since the data is a plain script — and look at it in light and dark mode: every track, the focused milestone card, the sections below. If labels collide or a track is overloaded, re-curate (split a track, merge milestones). Check a phone-width window too.
 
 ## Step 5 — Git hooks
 
-The hooks rebuild the page data after commits, merges, rebases and branch switches, and **never fail** them. All logic is in `tools/roadmap/rebuild.sh`; every hook only calls it with its own name and arguments. Pick the variant that matches the project; never replace a hook setup that is already there — add to it.
+The hooks rebuild the page data after commits, merges, rebases and branch switches, and **never fail** them. All logic is in `rebuild.sh`; every hook only calls it with its own name and arguments. Never replace a hook setup that is already there — add to it.
+
+**Shared** — pick the variant that matches the project:
 
 - **No hook manager, no `core.hooksPath`:** keep `.githooks/` as copied (its `.gitattributes` keeps LF line endings), make the scripts executable in git (`git add --chmod=+x .githooks/post-* tools/roadmap/rebuild.sh`) and run `git config core.hooksPath .githooks`. Document that one command for other clones (README or contributing guide).
 - **`core.hooksPath` already set:** move the four scripts into that folder and delete `.githooks/`; where a hook of that name exists, append its `exec sh tools/roadmap/rebuild.sh …` line without the `exec`.
@@ -112,7 +134,18 @@ The hooks rebuild the page data after commits, merges, rebases and branch switch
 
 If the page folder lies outside the repository, the hooks still write there; the human only needs the folder to exist.
 
-## Step 6 — The check
+**Local** — nothing tracked may change:
+
+- Find the folder git runs hooks from: `git rev-parse --git-path hooks` (usually `.git/hooks`). For each of `post-commit`, `post-merge`, `post-checkout` and `post-rewrite`: create the hook there with
+  ```sh
+  #!/bin/sh
+  sh .roadmap/tools/roadmap/rebuild.sh <hook> "$@"
+  ```
+  (its own name for `<hook>`), and make it executable (`chmod +x`). If the hook already exists, append the second line to it instead.
+- If that folder is part of the repository (`core.hooksPath` pointing at a committed folder, or Husky — whose hooks live in `.husky/`): add only hooks that do not exist yet, and list each new file in the exclude file. A hook of that name that is already committed must not be edited — leave it out and tell the human the page then skips that event.
+- Lefthook or the pre-commit framework overwrite git's hooks folder when they reinstall; tell the human, and that re-running this step restores them.
+
+## Step 6 — The check (shared only)
 
 Add `node tools/roadmap/build.mjs --check` to the project's existing check script and/or CI, next to its other checks:
 
@@ -120,7 +153,9 @@ Add `node tools/roadmap/build.mjs --check` to the project's existing check scrip
 - In CI, a shallow clone (the usual default) has no history: the check validates the plan and skips freshness. For freshness in CI, fetch full history (GitHub Actions: `fetch-depth: 0`).
 - If the project's checks treat any output as failure, make sure the warnings do not fail the run.
 
-## Step 7 — Build the data where the page is published
+Local: skip this step; the hooks already print the warnings after each commit.
+
+## Step 7 — Build the data where the page is published (shared only)
 
 `roadmap-data.js` names the commit it was built from, so it changes with every commit. It is therefore **not committed**: `docs/roadmap/.gitignore` keeps it out of git, and every clone builds its own through the hooks.
 
@@ -138,23 +173,28 @@ Add `node tools/roadmap/build.mjs --check` to the project's existing check scrip
   If the page is served straight from a branch with no build (e.g. GitHub Pages "deploy from a branch"), propose switching to a workflow like the one above; do not commit the data file instead — it would always be one commit behind and leave the working tree dirty.
 - **Page folder outside the repository:** delete the `.gitignore` there unless that folder is a git repository that publishes through a build of its own.
 
+Local: skip this step.
+
 ## Step 8 — The agent rule
 
-Paste `snippets/agent-rule.md` into the project's agent instructions (the file other AI tools read — `AGENTS.md`, `CLAUDE.md`, etc.; if there is none, ask the human which to create). Replace the placeholders: `<PAGE_FOLDER>`, `<PLAN_FILE>`, `<SCHEMA_FILE>`, `<BUILD_SCRIPT>`, `<MAIN_BRANCH>`, `<WATCHED_FILES>`, `<CHECK_COMMAND>`, and `<OPTIONAL_LANGUAGE_NOTE>` (e.g. ", in German and English", or delete it). Match the file's existing heading levels and tone.
+Fill in `snippets/agent-rule.md`: replace `<PAGE_FOLDER>`, `<PLAN_FILE>`, `<SCHEMA_FILE>`, `<BUILD_SCRIPT>`, `<MAIN_BRANCH>`, `<WATCHED_FILES>`, `<CHECK_COMMAND>`, and `<OPTIONAL_LANGUAGE_NOTE>` (e.g. ", in German and English", or delete it).
+
+- **Shared:** paste it into the project's agent instructions (the file other AI tools read — `AGENTS.md`, `CLAUDE.md`, etc.; if there is none, ask the human which to create). Match the file's existing heading levels and tone.
+- **Local:** paste it into a personal instruction file that is not committed — for Claude Code `CLAUDE.local.md` in the repository root; for other tools, their user-level instructions. Add a new file to the exclude file. Drop "(in the same branch / pull request as the change that causes it)": the plan is not in git. If the human's tool has no such file, save the rule as `.roadmap/AGENT_RULE.md` and tell them to point their agent at it.
 
 ## Step 9 — Report and clean up
 
 Tell the human, in plain words:
 
-- where the page is and how to open it;
+- shared or local, where the page is and how to open it;
 - the tracks you chose and why; the release goal;
 - which milestones you marked `active` / `next`, and the `waiting` items;
 - every assumption (a merge you grouped, a status you inferred, an outcome you named) — these are what they should correct;
 - any warning still printed, and why;
-- what every other clone needs: Node.js 18+, and the one-time command (`git config core.hooksPath ...`), if any;
-- what you changed for publishing.
+- shared: what every other clone needs — Node.js 18+, and the one-time command (`git config core.hooksPath ...`), if any — and what you changed for publishing;
+- local: that `git status` is unchanged, and any hook you had to leave out.
 
-Then ask whether to remove this template folder (everything it holds has been copied to its place). Commit only if the human asks you to, following the project's commit conventions.
+Then ask whether to remove this template folder (everything it holds has been copied to its place; it is ignored by git either way). Shared: commit only if the human asks you to, following the project's commit conventions. Local: there is nothing to commit.
 
 ## Tuning the page
 

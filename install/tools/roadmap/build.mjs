@@ -7,13 +7,18 @@
 //
 //   node tools/roadmap/build.mjs            build and write the data file
 //   node tools/roadmap/build.mjs --check    validate and report freshness; write nothing
-//   options: --plan <file>   plan file (default: $ROADMAP_PLAN, else docs/roadmap-live.json)
+//   options: --plan <file>   plan file (default: $ROADMAP_PLAN, else docs/roadmap-live.json
+//                            beside the tools/ folder this script is in)
 //            --out <dir>     page folder (default: $ROADMAP_OUT, else the plan's "output")
 //            --strict        exit 1 on warnings too
 //            --no-git        leave the git history out (e.g. to preview the example plan)
 //            --quiet         print warnings only
 //   Paths given as options are relative to the current folder; all others are
 //   relative to the repository root.
+//
+// The same script serves a shared install (tools/roadmap/, committed) and a
+// local one (.roadmap/tools/roadmap/, kept out of git). A plan git does not
+// track takes its times from the file itself.
 //
 // Exit code 1 only when the plan file itself is broken (with --strict: also on
 // any warning). Staleness and the curating rules are warnings.
@@ -34,8 +39,9 @@
 // warns until the plan says so too.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { isAbsolute, join, relative, resolve } from 'node:path';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 if (Number(process.versions.node.split('.')[0]) < 18) {
   console.error(`roadmap: ERROR Node.js 18 or newer is needed (this is ${process.version})`);
@@ -77,9 +83,10 @@ function tryGit(gitArgs, cwd = ROOT) {
 }
 
 const ROOT = tryGit(['rev-parse', '--show-toplevel'], process.cwd()) || process.cwd();
+const DEFAULT_PLAN = resolve(dirname(fileURLToPath(import.meta.url)), '../../docs/roadmap-live.json');
 const PLAN = option('--plan')
   ? resolve(option('--plan'))
-  : resolve(ROOT, process.env.ROADMAP_PLAN || 'docs/roadmap-live.json');
+  : process.env.ROADMAP_PLAN ? resolve(ROOT, process.env.ROADMAP_PLAN) : DEFAULT_PLAN;
 const PLAN_REL = relative(ROOT, PLAN).replace(/\\/g, '/');
 
 // --- Plan file -----------------------------------------------------------------
@@ -279,16 +286,31 @@ function readHistory(plan) {
   const events = log.split('\x1e').map((r) => r.replace(/^\n/, '')).filter(Boolean).map(parseEvent).filter(Boolean);
   const head = tryGit(['log', '-1', '--format=%h%x1f%ad', '--date=short', 'HEAD']);
   const [headHash, headDate] = head ? head.split('\x1f') : [null, null];
-  // File times come from this checkout: an uncommitted edit counts as now.
+  // File times come from this checkout: an uncommitted edit counts as now. A
+  // file git does not track (the plan of a local install) has its own times.
   const now = Math.floor(Date.now() / 1000);
-  const lastChange = (path) => (tryGit(['status', '--porcelain', '--', path])
-    ? now
-    : Number(tryGit(['log', '-1', '--format=%ct', 'HEAD', '--', path]) || 0));
+  const tracked = (path) => tryGit(['ls-files', '--error-unmatch', '--', path]) !== null;
+  const fileTime = (path, born) => {
+    try {
+      const stat = statSync(resolve(ROOT, path));
+      return Math.floor((born && stat.birthtimeMs ? stat.birthtimeMs : stat.mtimeMs) / 1000);
+    } catch {
+      return 0;
+    }
+  };
+  const lastChange = (path) => {
+    if (!tracked(path)) return fileTime(path, false);
+    return tryGit(['status', '--porcelain', '--', path])
+      ? now
+      : Number(tryGit(['log', '-1', '--format=%ct', 'HEAD', '--', path]) || 0);
+  };
   return {
     ref, events,
     head: { hash: headHash, date: headDate, branch: tryGit(['rev-parse', '--abbrev-ref', 'HEAD']) },
     planTime: lastChange(PLAN_REL),
-    planBorn: Number(tryGit(['log', '--diff-filter=A', '--format=%ct', '-1', 'HEAD', '--', PLAN_REL]) || now),
+    planBorn: tracked(PLAN_REL)
+      ? Number(tryGit(['log', '--diff-filter=A', '--format=%ct', '-1', 'HEAD', '--', PLAN_REL]) || now)
+      : fileTime(PLAN_REL, true) || now,
     watched: (plan.watch ?? []).map((path) => ({ path, time: lastChange(path) })),
   };
 }

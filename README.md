@@ -14,12 +14,14 @@
 
 You need **git**, **Node.js 18+** and an AI coding agent (Claude Code, Cursor, Copilot, …).
 
-1. **Download** the ZIP above and unzip it into the root folder of your project.
+1. **Download** the ZIP above and unzip it into the root folder of your project. The folder ignores itself, so it never ends up in your commits.
 2. **Ask your AI agent:**
    > Read `live-roadmap-template-main/AI_SETUP.md` and set up the live roadmap for this project.
-3. **Answer its few questions**, check its report, then open `docs/roadmap/roadmap.html` in a browser.
+3. **Answer its few questions**, check its report, then open the page it names in a browser.
 
-That's it. The agent reads your documents and merge history, writes the plan, and installs the page, the git hooks and a check. From then on the page updates itself after every commit, and later AI sessions keep the plan true.
+That's it. The agent reads your documents and merge history, writes the plan, and installs the page and the git hooks. From then on the page updates itself after every commit, and later AI sessions keep the plan true.
+
+**Just for you, or for the team?** The agent asks. **Local** keeps everything in a `.roadmap/` folder that git ignores, so your repository stays untouched. **Shared** commits the roadmap so teammates, CI and a published page get it too.
 
 ## What you get
 
