@@ -5,10 +5,7 @@
 [![Download](https://img.shields.io/badge/Download-ZIP-ff5a36?style=for-the-badge&logo=github&logoColor=white)](https://github.com/FG-RVT/live-roadmap-template/releases/latest/download/live-roadmap-template.zip)
 [![License: MIT](https://img.shields.io/badge/License-MIT-437700?style=for-the-badge)](LICENSE)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="images/roadmap-dark.png">
-  <img src="images/roadmap-light.png" alt="The live roadmap: a timeline whose tracks branch off and meet again at the release, with the milestone in focus described below it.">
-</picture>
+![The live roadmap: a timeline whose tracks branch off and meet again at the release, with the milestone in focus described below it.](images/RoadmapTemplate_Demo.gif)
 
 ## Quick start
 
